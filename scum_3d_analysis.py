@@ -527,7 +527,7 @@ def calibrate(scum_gnd_df,initial_cam1, initial_cam2,lighthouse_cams):
 	lh_cam_1 = []
 	
 	#print(lh_cam_1)
-	for i in range(100,3000):
+	for i in range(0,4500):
 		current_point_time = lighthouse_cams[i,0]
 		gnd_index = scum_gnd_df.index.get_loc(current_point_time,method = 'nearest')
 		gnd_row = scum_gnd_df.iloc[gnd_index]
@@ -603,7 +603,7 @@ def calibrate(scum_gnd_df,initial_cam1, initial_cam2,lighthouse_cams):
 	lh_cam_2 = []
 	
 	#print(lh_cam_1)
-	for i in range(100,4500):
+	for i in range(0,4500):
 		current_point_time = lighthouse_cams[i,0]
 		gnd_index = scum_gnd_df.index.get_loc(current_point_time,method = 'nearest')
 		gnd_row = scum_gnd_df.iloc[gnd_index]
