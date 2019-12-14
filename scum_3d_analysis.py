@@ -261,7 +261,10 @@ def align_data(lh_data,optitrack_data = None):
 
 	#time offsets (lh - optitrack)
 	offsets = {'take1' : 284.6-85.4039,
-				'take2' : 0 }
+				'take2' : 257.359 - 2.94922,
+				'take3' : 58.08 - 5.671,
+				'take4' : 150.123 - 96.4074,
+				'take5' : 116.671-84.6218}
 
 	aligned_timestamps = lh_data['timestamp_seconds'] - offsets[sys.argv[1]] 
 	return aligned_timestamps
@@ -513,7 +516,8 @@ def calibrate(scum_gnd_df,initial_cam1, initial_cam2,lighthouse_cams):
 
 
 
-
+	begin = 2000
+	end = 3500
 
 	#loop through each point 
 	
@@ -527,7 +531,7 @@ def calibrate(scum_gnd_df,initial_cam1, initial_cam2,lighthouse_cams):
 	lh_cam_1 = []
 	
 	#print(lh_cam_1)
-	for i in range(0,4500):
+	for i in range(begin,end):
 		current_point_time = lighthouse_cams[i,0]
 		gnd_index = scum_gnd_df.index.get_loc(current_point_time,method = 'nearest')
 		gnd_row = scum_gnd_df.iloc[gnd_index]
@@ -536,7 +540,7 @@ def calibrate(scum_gnd_df,initial_cam1, initial_cam2,lighthouse_cams):
 		gnd_z = np.interp(current_point_time, scum_gnd_df['Time','Time'],scum_gnd_df['Position','Z']) 
 		
 		gnd_point = list(gnd_row['Position'].values[0:3].astype('float32'))
-		if (not np.isnan(gnd_point).any()) and (not (abs(lighthouse_cams[i,1:3]) > 5).any())  and (not (abs(lighthouse_cams[i,0]) > 150)):
+		if (not np.isnan(gnd_point).any()) and (not (abs(lighthouse_cams[i,1:3]) > 5).any())  and (not (abs(lighthouse_cams[i,0]) > 900)) and (not (lighthouse_cams[i,0] < 0)):
 			lh_cam_1.append([lighthouse_cams[i][1], lighthouse_cams[i][2]])
 			gnd_cam.append(gnd_point)
 
@@ -585,7 +589,6 @@ def calibrate(scum_gnd_df,initial_cam1, initial_cam2,lighthouse_cams):
 	plt.figure()
 	plt.subplot(2,1,1)
 	plt.plot(xyz_camera[0,:]/xyz_camera[2,:])
-	plt.plot(xyz_camera[2,:])
 	plt.plot(np.array(lh_cam_1)[:,0])
 	plt.title("Lighthouse 1 projecttion check")
 	plt.plot(cvproj1[:,0])
@@ -603,7 +606,7 @@ def calibrate(scum_gnd_df,initial_cam1, initial_cam2,lighthouse_cams):
 	lh_cam_2 = []
 	
 	#print(lh_cam_1)
-	for i in range(0,4500):
+	for i in range(begin,end):
 		current_point_time = lighthouse_cams[i,0]
 		gnd_index = scum_gnd_df.index.get_loc(current_point_time,method = 'nearest')
 		gnd_row = scum_gnd_df.iloc[gnd_index]
@@ -612,7 +615,7 @@ def calibrate(scum_gnd_df,initial_cam1, initial_cam2,lighthouse_cams):
 		gnd_z = np.interp(current_point_time, scum_gnd_df['Time','Time'],scum_gnd_df['Position','Z']) 
 		
 		gnd_point = list(gnd_row['Position'].values[0:3].astype('float32'))
-		if (not np.isnan(gnd_point).any()) and (not (abs(lighthouse_cams[i,3:5]) > 5).any()) and (not (abs(lighthouse_cams[i,0]) > 150)):
+		if (not np.isnan(gnd_point).any()) and (not (abs(lighthouse_cams[i,3:5]) > 5).any()) and (not (abs(lighthouse_cams[i,0]) > 900)) and (not (lighthouse_cams[i,0] < 0)):
 			lh_cam_2.append([lighthouse_cams[i][3], lighthouse_cams[i][4]])
 			gnd_cam.append(gnd_point)
 
@@ -693,7 +696,7 @@ if __name__ == "__main__":
 
 	#load lighthouse data file
 	with open(lighthouse_filename) as file:
-		if sys.argv[1] == 'take1':
+		if sys.argv[1] == 'take1' or sys.argv[1] == 'take5':
 			lighthouse_df = pd.read_csv(file, header=None, names = ['azA', 'elA', 'azB', 'elB', 'timestamp_10.82 Hz'], dtype = float)
 		else: 
 			lighthouse_df = pd.read_csv(file, header=None,lineterminator = ']', sep = ',', names = ['azA', 'elA', 'azB', 'elB', 'timestamp_10.82 Hz'],dtype = float)
@@ -732,8 +735,8 @@ if __name__ == "__main__":
 																						lh1_to_gnd = lh1[0], 
 																						lh2_to_gnd = lh2[0])
 	
-	#plot_raw_data(azimuth1_gnd, azimuth2_gnd, elevation1_gnd, elevation2_gnd, lighthouse_df, scum_gnd_df)
-
+	plot_raw_data(azimuth1_gnd, azimuth2_gnd, elevation1_gnd, elevation2_gnd, lighthouse_df, scum_gnd_df)
+	#plt.show()
 
 	#interpolate lighthouse data times to get ground truth at those data times 
 	lighthouse_processed_dict = generate_data_dict(azimuth1_gnd, azimuth2_gnd, elevation1_gnd, elevation2_gnd, lighthouse_df, scum_gnd_df)
@@ -772,14 +775,6 @@ if __name__ == "__main__":
 		plt.title('Truth: '+str(i))
 		#plt.ylim([0,5])
 
-	#triangulate lighthouse info
-	trajectory = triangulate_scum(lighthouse_processed_dict,lh1_obj, lh2_obj)
-	#trajectory = triangulate_scum_nodict(lighthouse_df, lh1_obj, lh2_obj)
-	plt.figure()
-	for i in range(1,4):
-		plt.subplot(3,1,i)
-		plt.scatter(trajectory[:,0],trajectory[:,i],s = 1)
-		#plt.ylim([0,5])
 
 	#trajectory,cam_points = triangulate_scum_nodict(lighthouse_df, lh1_obj, lh2_obj)
 	#lh1_calibrated, lh2_calibrated, lh1_gnd_proj, lh2_gnd_proj = calibrate(scum_gnd_df,lh1_obj.P,lh2_obj.P,cam_points)
